@@ -1,0 +1,66 @@
+---
+# ECMP source-IP hashing test topology (FRR-driven).
+#
+#   client .10 --- cli --- [ dut ] --- p1 --- r1 .2
+#   (203.0.113.0/24)   |            --- p2 --- r2 .2
+#                       |            --- p3 --- r3 .2
+#                       |            --- p4 --- r4 .2
+#
+# dut  : FRR router under test (.1 on every link).
+# rN   : FRR routers = ECMP next-hops (.2) + traffic sinks (capture server).
+# client: scapy traffic generator (spoofed sources).
+#
+# The frr.conf for each FRR node lives in configs/<name>.conf.  Alternative
+# scenarios (OSPF, BGP) override only the .conf files they need and inherit
+# this topology + daemons.
+
+networks:
+  cli: {subnet: 203.0.113.0/24, gateway: 203.0.113.254, internal: true}
+  p1:  {subnet: 10.0.1.0/24,    gateway: 10.0.1.254,    internal: true}
+  p2:  {subnet: 10.0.2.0/24,    gateway: 10.0.2.254,    internal: true}
+  p3:  {subnet: 10.0.3.0/24,    gateway: 10.0.3.254,    internal: true}
+  p4:  {subnet: 10.0.4.0/24,    gateway: 10.0.4.254,    internal: true}
+
+containers:
+  dut:
+    image: networkop/cx:5.3.0
+    role: dut
+    privileged: true
+    cap_add: [NET_ADMIN, SYS_ADMIN, NET_RAW]
+    networks: {cli: 203.0.113.1, p1: 10.0.1.1, p2: 10.0.2.1, p3: 10.0.3.1, p4: 10.0.4.1}
+
+  client:
+    image: stepanenko/generator
+    role: client
+    privileged: true
+    cap_add: [NET_ADMIN, NET_RAW]
+    networks: {cli: 203.0.113.10}
+
+  r1:
+    image: networkop/cx:5.3.0
+    role: router
+    privileged: true
+    cap_add: [NET_ADMIN, SYS_ADMIN, NET_RAW]
+    networks: {p1: 10.0.1.2}
+
+  r2:
+    image: networkop/cx:5.3.0
+    role: router
+    privileged: true
+    cap_add: [NET_ADMIN, SYS_ADMIN, NET_RAW]
+    networks: {p2: 10.0.2.2}
+
+  r3:
+    image: networkop/cx:5.3.0
+    role: router
+    privileged: true
+    cap_add: [NET_ADMIN, SYS_ADMIN, NET_RAW]
+    networks: {p3: 10.0.3.2}
+
+  r4:
+    image: networkop/cx:5.3.0
+    role: router
+    privileged: true
+    cap_add: [NET_ADMIN, SYS_ADMIN, NET_RAW]
+    networks: {p4: 10.0.4.2}
+...
